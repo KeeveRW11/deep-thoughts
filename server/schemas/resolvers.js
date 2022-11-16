@@ -2,6 +2,7 @@ const { User, Thought } = require('../models');
 const { AuthenticationError } = require('apollo-server-express');
 const { isType } = require('graphql');
 const { signToken } = require('../utils/auth');
+const { countDocuments } = require('../models/User');
 
 const resolvers = {
     Query: {
@@ -47,7 +48,20 @@ const resolvers = {
 
             return { token, user };
         },
-        
+        // we use add to set to prevent duplication
+        addFriend: async (parent, { friendId }, context) => {
+            if(context.user) {
+                const updatedUser = await User.findOneAndUpdate(
+                    { _id: context.user._id },
+                    { $addToSet: { friends: friendId } }, 
+                    { new: true }
+                ).populate('friends');
+
+                return updatedUser;
+            }
+
+            throw new AuthenticationError('You need to be logged in!');
+        },
         addThought: async (parent, args, context) => {
             if (context.user) {
                 const thought = await Thought.create({ ...args, username: context.user.username });
@@ -62,8 +76,22 @@ const resolvers = {
             }
 
             throw new AuthenticationError('You need to be logged in!');
-        
         },
+
+        addReaction: async (parent, { thoughtId, reactionBody }, context) => {
+            if (context.user) {
+                const updatedThought = await Thought.findOneAndUpdate(
+                    { _id: thoughtId },
+                    { $push: { reactions: { reactionBody, username: context.user.username } } },
+                    { new: true, runValidators: true }
+                );
+
+                return updatedThought;
+            }
+
+            throw new AuthenticationError('You need to be logged in!');
+        },
+
         login: async (parent, { email, password }) => {
             const user = await User.findOne({ email });
 
@@ -78,7 +106,7 @@ const resolvers = {
             }
             
             const token = signToken(user);
-            return user;
+            return { token, user };
 
         }
     }
