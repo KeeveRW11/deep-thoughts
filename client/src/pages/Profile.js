@@ -11,7 +11,7 @@ import { ADD_FRIEND } from '../utils/mutations';
 
 import Auth from '../utils/auth'
 
-const Profile = () => {
+const Profile = (props) => {
   const { username: userParam } = useParams();
 
   const [addFriend] = useMutation(ADD_FRIEND);
@@ -23,7 +23,7 @@ const Profile = () => {
 
   // navigate to personal profile page if username is the logged-in user's
   if (Auth.loggedIn() && Auth.getProfile().data.username === userParam) {
-    return <Navigate to="/profile" />;
+    return <Navigate to="/profile:username" />;
   }
 
   if (loading) {
@@ -41,7 +41,7 @@ const Profile = () => {
   const handleClick = async () => {
     try {
       await addFriend({
-        variables: { id: user._id }
+        variables: { id: user._id },
       });
     } catch (e) {
       console.error(e);
@@ -52,7 +52,7 @@ const Profile = () => {
     <div>
       <div className="flex-row mb-3">{!userParam && <ThoughtForm />}
         <h2 className="bg-dark text-secondary p-3 display-inline-block">
-          Viewing {userParam ? `${user.username}}'s` : 'your'} profile.
+          Viewing {userParam ? `${user.username}'s` : 'your'} profile.
         </h2>
           {userParam && (
             <button className="btn ml-auto" onClick={handleClick}>
